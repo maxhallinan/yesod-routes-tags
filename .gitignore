@@ -1,0 +1,3 @@
+*.hi
+*.yesodroutes
+dist
