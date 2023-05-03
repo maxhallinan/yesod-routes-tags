@@ -14,6 +14,7 @@ import Data.List.Extra (nubOrd)
 import Data.Lists (merge, sort)
 import Data.Map (Map)
 import Data.Map qualified as M
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Encoding qualified as TE
@@ -32,8 +33,8 @@ data Route = Route
 isMethod :: Text -> Bool
 isMethod = not . T.isPrefixOf "!"
 
-parseRoutesFile :: Text -> Text -> [Route]
-parseRoutesFile fileName file = fst $ foldl' go ([], 1) (T.lines file)
+parseRoutesFile :: Map Text [Text] -> Text -> Text -> [Route]
+parseRoutesFile existingTagsByTagName fileName file = fst $ foldl' go ([], 1) (T.lines file)
   where
     go (result, lineNumber) l =
       case tokens of
@@ -45,9 +46,12 @@ parseRoutesFile fileName file = fst $ foldl' go ([], 1) (T.lines file)
           let
             methods = filter isMethod rest
             routes = methods <&> \routeMethod ->
+              let
+                routeHandlerName = T.toLower routeMethod <> routeName
+              in
               Route
-                { routeHandlerName = T.toLower routeMethod <> routeName
-                , routeHandlerTags = []
+                { routeHandlerName
+                , routeHandlerTags = fromMaybe [] $ M.lookup routeHandlerName existingTagsByTagName
                 , routeMethod
                 , routeName
                 , routeSourceFileName = fileName
@@ -73,25 +77,28 @@ renderRouteTags Route {..} = routeTag : handlerTags
     handlerTags =
       routeHandlerTags <&> \t -> routeName <> "\t" <> t
 
--- collectExistingTags :: Text -> Map Text [Text]
--- collectExistingTags tagsFile = foldr go mempty (T.lines tagsFile)
---   where
---     go
---   let tagLines = filter (not . T.isPrefixOf "!_TAG") $ T.lines tagsFile
---     in tagLines <&> \tl ->
---           let
---             (name, rest) = T.breakOn "\t" tl
---           in
---           Tag {tagName = name, tagRest = rest}
+groupExistingTagsByTagName :: [Text] -> Map Text [Text]
+groupExistingTagsByTagName existingTags = foldl' go mempty existingTags
+  where
+    go result l =
+      if T.isPrefixOf "!_TAG" line
+        then
+          result
+        else
+          M.insertWith (<>) tagName [T.strip tagRemainder] result
+      where
+        line = T.strip l
+        (tagName, tagRemainder) = T.breakOn "\t" line
 
 main :: IO ()
 main = do
-  let routesFilePath = "routes.yesodroutes"
+  let routesFilePath = "config/routes.yesodroutes"
       tagsFilePath = "mwb-tags"
   routesFile <- TIO.readFile $ T.unpack routesFilePath
   existingTagsFile <- TIO.readFile $ T.unpack tagsFilePath
   let existingTags = T.lines existingTagsFile
-      parsedRoutes = parseRoutesFile routesFilePath routesFile
+      existingTagsByTagName = groupExistingTagsByTagName existingTags
+      parsedRoutes = parseRoutesFile existingTagsByTagName routesFilePath routesFile
       routeTags = concatMap renderRouteTags parsedRoutes
       allTags = nubOrd $ merge existingTags $ sort routeTags
   TIO.writeFile "tags" $ T.intercalate "\n" allTags <> "\n"
