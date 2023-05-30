@@ -1,0 +1,17 @@
+name:                yesod-routes-tags
+version:             0.1.0.0
+github:              "maxhallinan/yesod-routes-tags"
+
+dependencies:
+- base >= 4.7 && < 5
+- bytestring
+- extra
+- lists
+- text
+
+ghc-options:
+- -Wall
+
+executable:
+  main:                Main.hs
+  source-dirs:         app

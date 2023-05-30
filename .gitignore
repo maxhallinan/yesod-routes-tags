@@ -1,5 +1,2 @@
-*.hi
-*.yesodroutes
-dist
-tags
-mwb-tags
+.stack-work/
+*~
