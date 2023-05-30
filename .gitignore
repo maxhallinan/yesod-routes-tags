@@ -1,2 +1,8 @@
 .stack-work/
 *~
+result
+*.hi
+*.yesodroutes
+dist
+tags
+mwb-tags

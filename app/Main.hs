@@ -1,7 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-
 import Prelude
 import Control.Monad
 import Data.ByteString (ByteString)
