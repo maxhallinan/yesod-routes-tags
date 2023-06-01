@@ -6,7 +6,7 @@ import Data.ByteString.Char8 qualified as Char8
 import Data.Foldable (foldl')
 import Data.Functor ((<&>))
 import Data.Char qualified as C
-import Data.List.Extra (nubOrd)
+import Data.List.Extra ((!?), nubOrd)
 import Data.Lists (merge, sort)
 import Data.Map (Map)
 import Data.Map qualified as M
@@ -15,7 +15,9 @@ import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Encoding qualified as TE
 import Data.Text.IO qualified as TIO
+import System.Environment (getArgs)
 
+-- Foo
 data Route = Route
   { routeHandlerName :: Text
   , routeHandlerTags :: [Text]
@@ -88,13 +90,16 @@ groupExistingTagsByTagName existingTags = foldl' go mempty existingTags
 
 main :: IO ()
 main = do
-  let routesFilePath = "config/routes.yesodroutes"
-      tagsFilePath = "mwb-tags"
-  routesFile <- TIO.readFile $ T.unpack routesFilePath
-  existingTagsFile <- TIO.readFile $ T.unpack tagsFilePath
-  let existingTags = T.lines existingTagsFile
-      existingTagsByTagName = groupExistingTagsByTagName existingTags
-      parsedRoutes = parseRoutesFile existingTagsByTagName routesFilePath routesFile
-      routeTags = concatMap renderRouteTags parsedRoutes
-      allTags = nubOrd $ merge existingTags $ sort routeTags
-  TIO.writeFile "tags" $ T.intercalate "\n" allTags <> "\n"
+  args <- getArgs
+  let mRoutesFilePath = args !? 0
+      mTagsFilePath = args !? 1
+      mFilePaths = (,) <$> mRoutesFilePath <*> mTagsFilePath
+  forM_ mFilePaths \(routesFilePath, tagsFilePath) -> do
+    routesFile <- TIO.readFile routesFilePath
+    existingTagsFile <- TIO.readFile tagsFilePath
+    let existingTags = T.lines existingTagsFile
+        existingTagsByTagName = groupExistingTagsByTagName existingTags
+        parsedRoutes = parseRoutesFile existingTagsByTagName (T.pack routesFilePath) routesFile
+        routeTags = concatMap renderRouteTags parsedRoutes
+        allTags = nubOrd $ merge existingTags $ sort routeTags
+    TIO.writeFile "tags" $ T.intercalate "\n" allTags <> "\n"
