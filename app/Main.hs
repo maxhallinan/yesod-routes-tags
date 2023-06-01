@@ -17,7 +17,6 @@ import Data.Text.Encoding qualified as TE
 import Data.Text.IO qualified as TIO
 import System.Environment (getArgs)
 
--- Foo
 data Route = Route
   { routeHandlerName :: Text
   , routeHandlerTags :: [Text]
@@ -102,4 +101,4 @@ main = do
         parsedRoutes = parseRoutesFile existingTagsByTagName (T.pack routesFilePath) routesFile
         routeTags = concatMap renderRouteTags parsedRoutes
         allTags = nubOrd $ merge existingTags $ sort routeTags
-    TIO.writeFile "tags" $ T.intercalate "\n" allTags <> "\n"
+    TIO.writeFile tagsFilePath $ T.intercalate "\n" allTags <> "\n"
